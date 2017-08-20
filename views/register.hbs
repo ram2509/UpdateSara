@@ -1,7 +1,13 @@
 <div class="container">
     <div class="row main">
         <div class="main-login main-center">
-            <form class="" method="post" action="/users/register">
+            <!--Validation of the reg form-->
+            {{#if errors}}
+                 {{#each errors}}
+                   <div class="alert alert-danger">{{msg}}</div>
+                 {{/each}}
+            {{/if}}
+            <form class="" method="post" action="/users/register" enctype="multipart/form-data">
 
                 <div class="form-group">
                     <label for="name" class="cols-sm-2 control-label">Your Name</label>
@@ -48,7 +54,7 @@
                     <div class="cols-sm-10">
                         <div class="input-group">
                             <span class="input-group-addon"><i class="fa fa-lock fa-lg" aria-hidden="true"></i></span>
-                            <input type="password" class="form-control" name="confirm" id="uploads"/>
+                            <input type="password" class="form-control" name="password2" id="uploads"/>
                         </div>
                     </div>
                 </div>
@@ -57,7 +63,7 @@
                     <label for="confirm" class="cols-sm-2 control-label">Uploads Profile Image</label>
                     <div class="cols-sm-10">
                         <div class="input-group">
-                            <input type="file" class="form-control" name="profileImage" id="confirm"  placeholder="Confirm your Password"/>
+                            <input type="file" class="form-control" name="profileImage" accept="image/*">
                         </div>
                     </div>
                 </div>
