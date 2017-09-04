@@ -1,39 +1,29 @@
 {
-  "name": "modified-sarahah",
+  "name": "contestblocks",
   "version": "1.0.0",
-  "description": "add some new features to sarahah",
-  "main": "index.js",
+  "description": "",
+  "main": "server.js",
+  "dependencies": {
+    "bcrypt": "^1.0.3",
+    "joi": "^10.6.0",
+    "mongodb": "^2.2.31",
+    "mongoose": "^4.11.8",
+    "passport": "^0.4.0",
+    "passport-local": "^1.0.0"
+  },
+  "devDependencies": {},
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ram2509/UpdateSara.git"
+    "url": "git+https://github.com/ram2509/contest_blocks.git"
   },
-  "author": "rambabu",
+  "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/ram2509/UpdateSara/issues"
+    "url": "https://github.com/ram2509/contest_blocks/issues"
   },
-  "homepage": "https://github.com/ram2509/UpdateSara#readme",
-  "dependencies": {
-    "bcrypt": "^1.0.2",
-    "body-parser": "^1.17.2",
-    "connect-flash": "^0.1.1",
-    "cookie-parser": "^1.4.3",
-    "express": "^4.15.4",
-    "express-handlebars": "^3.0.0",
-    "express-messages": "^1.0.1",
-    "express-session": "^1.15.5",
-    "express-validator": "^3.2.1",
-    "handlebars": "^4.0.10",
-    "hbs": "^4.0.1",
-    "mongodb": "^2.2.31",
-    "mongoose": "^4.11.7",
-    "multer": "^1.3.0",
-    "passport": "^0.4.0",
-    "passport-http": "^0.3.0",
-    "passport-local": "^1.0.0",
-    "path": "^0.12.7"
-  }
+  "homepage": "https://github.com/ram2509/contest_blocks#readme"
 }

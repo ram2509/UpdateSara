@@ -1,17 +1,15 @@
 var router = require('express').Router();
 
-//Get the home page
-router.get('/',ensureAuthentication,function (req,res,next) {
-      res.render('index');
+router.get('/',ensureAuthentication,function (req,res) {
+    res.render('index');
 });
 
 function ensureAuthentication(req,res,next) {
     if(req.isAuthenticated()){
-          return next();
+        return next();
     }
     else {
-         // req.flash('error_msg','You are not login');
-          res.redirect('/users/login');
+        res.redirect('/users/login');
     }
 }
 

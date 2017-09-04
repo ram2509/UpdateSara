@@ -1,3 +1,7 @@
-db/*
-node_modules/*
-￼
+.idea/inspectionProfiles/
+db/
+model/fbuser.js
+model/usersdb.js
+node_modules/
+public/css/main.css
+public/js/

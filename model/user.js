@@ -1,55 +1,55 @@
 var mongoose = require('mongoose');
+var mongodb = require('mongodb');
 var bcrypt = require('bcrypt');
+var saltRounds = 10;
+var Schema = mongoose.Schema;
 
-const saltRounds = 10;
-
-mongoose.connect('mongodb://localhost/modifiedSara');
+mongoose.connect('mongodb://localhost/update');
 var db = mongoose.connection;
 
-var userSchema = mongoose.Schema({
-         name:{
-             type:String,
-             index:true
-         } ,
-         email:{
-             type:String
-         },
-         username:{
-             type:String
-         },
-         password:{
-             type:String
-         },
-         profileImage:{
-             type:String
-         }
+var userSchema = new Schema({
+    email        : String,
+    username      :String,
+    password      :String
 });
 
-var User=module.exports = mongoose.model('User',userSchema);
 
-module.exports.getUserById = function (id,callback) {
-    User.findById(id,callback);
-};
-
-module.exports.getUserByUsername = function (username,callback) {
-    var query = {username:username};
-    User.findOne(query,callback);
-};
-
-module.exports.comparePassword = function (password,hash,callback) {
-    // Load hash from your password DB.
-    bcrypt.compare(password, hash, function(err, isMatch) {
-        callback(null,isMatch);
-    });
-}
+var User = mongoose.model('user',userSchema);
+module.exports = User;
 
 module.exports.createUser = function (newUser,callback) {
     bcrypt.genSalt(saltRounds, function(err, salt) {
         bcrypt.hash(newUser.password, salt, function(err, hash) {
-            // Store hash in your password DB.
+            // Store hash in your password DB
             newUser.password = hash;
             newUser.save(callback);
         });
     });
+};
 
+//local userID
+module.exports.getUserByUserName = function (username,callback) {
+    var query = {username:username};
+    User.findOne(query,callback);
+};
+
+module.exports.getUserById = function (id,callback) {
+    User.findById(id,callback);
 }
+
+module.exports.comparePassword = function (userPassword,hash,callback) {
+    bcrypt.compare(userPassword, hash, function(err, isMatch) {
+        if(err) throw err;
+        callback(null,isMatch);
+    });
+}
+
+//fb useId
+//create new user using fb id
+
+
+
+
+
+
+

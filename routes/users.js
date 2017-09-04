@@ -1,28 +1,96 @@
 var router = require('express').Router();
-var multer = require('multer');
-var upload = multer({ dest: './uploads' });
-var passport = require('passport');
-var LocalStrategy = require('passport-local').Strategy;
+var Joi = require('joi');
 var User = require('../model/user');
+var FbUser = require('../model/fbuser');
+var passport = require('passport');
+var localStrategy = require('passport-local').Strategy;
+var FacebookStrategy = require('passport-facebook').Strategy;
+//var userDB = require('../model/usersdb');
 
-router.get('/register',function (req,res,next) {
-    res.render('register');
+//validation of register page data
+var schema = Joi.object().keys({
+    email: Joi.string().email().required(),
+    username: Joi.string().alphanum().min(5).max(30).required(),
+    password: Joi.string().regex(/^[a-zA-Z0-9]{6,30}$/).required(),
+    confirmPassword : Joi.any().valid(Joi.ref('password')).required()
 });
 
-router.get('/login',function (req,res,next) {
+//render the login page
+router.get('/login',function (req,res) {
     res.render('login');
 });
 
-router.post('/login',
-    passport.authenticate('local', { successRedirect: '/',
-                                     failureRedirect: 'users/login',
-                                     failureFlash:true}),
-    function(req, res) {
-        // If this function gets called, authentication was successful.
-        // `req.user` contains the authenticated user.
-        //res.redirect('/users/' + req.user.username);
-       res.redirect('/');
+//render the register page
+router.get('/register',function (req,res) {
+    res.render('register');
 });
+
+router.get('/dashboard',function(req,res) {
+    res.render('dashboard');
+});
+
+//render chat
+router.get('/chat',function (req,res) {
+    res.render('chat');
+})
+
+// router.get('/auth/facebook',function (req,res) {
+//     res.send('redirect');
+// })
+
+router.post('/register',function (req,res,next) {
+    var result = Joi.validate(req.body,schema);
+    if(result.error){
+        console.log('user input is invalid');
+        res.redirect('/users/register');
+        return;
+    }
+    else{
+         console.log('No error');
+         // var user = {
+         //     email : result.value.email,
+         //     username : result.value.username,
+         //     password : result.value.password
+         // }
+         // userDB.insertNewUser(user,function (result) {
+         //     console.log(result);
+         // });
+        var newUser = new User(
+        {
+            email : result.value.email,
+            username : result.value.username,
+            password : result.value.password
+        });
+
+        User.createUser(newUser,function(err,user) {
+            if(err) throw err;
+            console.log(user);
+        });
+        res.redirect('/users/login');
+    }
+    console.log('success');
+});
+
+passport.use(new localStrategy(
+    function(username, password, done) {
+        User.getUserByUserName(username, function (err, user) {
+            if (err) { return done(err); }
+            if (!user) {
+                return done(null, false, { message: 'Incorrect username.' });
+            }
+            User.comparePassword(password,user.password,function (err,isMatch) {
+               if(err) {return done(err);}
+               if(isMatch){
+                   return done(null,user);
+               }
+               else {
+                   return done(null,false,{message:'Invalid password'});
+               }
+            })
+
+        });
+    }
+));
 
 passport.serializeUser(function(user, done) {
     done(null, user.id);
@@ -34,84 +102,76 @@ passport.deserializeUser(function(id, done) {
     });
 });
 
-passport.use(new LocalStrategy(
-    function(username, password, done) {
-        User.getUserByUsername(username, function (err, user) {
-            if (err) { return done(err); }
-            if (!user) {
-                return done(null, false, { message: 'Incorrect username.' });
-            }
-        User.comparePassword(password,user.password,function (err,isMatch) {
-            if(err) return done(err) ;
-            if(isMatch){
-                return done(null, user);
-            }
-            else {
-              return done(null, false, { message: 'Incorrect password.' })
-            }
-        });
+router.post('/login',
+    passport.authenticate('local',{ successRedirect: '/users/dashboard',
+                                    failureRedirect: '/login' }),
+    function(req, res) {
+        // If this function gets called, authentication was successful.
+        // `req.user` contains the authenticated user.
+        res.redirect('/users/dashboard');
+    });
 
 
+router.get('/logout',function (req,res) {
+    req.logout();
+    res.redirect('/users/login');
+});
+
+//Facebook login Strategy
+
+var FACEBOOK_APP_ID = '705403943000436';
+var FACEBOOK_APP_SECRET = '0ae3cb592c10b7a3b533a9ee899e962c';
+
+passport.use(new FacebookStrategy({
+        clientID: FACEBOOK_APP_ID,
+        clientSecret: FACEBOOK_APP_SECRET,
+        callbackURL: "http://localhost:5000/auth/facebook/callback"
+    },
+    function(accessToken, refreshToken, profile, done) {
+        // find the user in the database based on their facebook id
+        FbUser.getFbUserById(profile.id, function(err, fbUser) {
+
+            // if there is an error, stop everything and return that
+            // ie an error connecting to the database
+            if (err)
+                return done(err);
+
+            // if the user is found, then log them in
+            if (fbUser) {
+                return done(null, fbUser); // user found, return that user
+            } else {
+                // if there is no user found with that facebook id, create them
+                var newFbUser = new FbUser({
+                     id : profile.id,
+                     access_token : accessToken,
+                     firstName : profile.name.givenName,
+                     lastName  : profile.name.familyName,
+                     email : profile.emails[0].value
+                });
+
+                // set all of the facebook information in our user model
+                // newUser.fb.id    = profile.id; // set the users facebook id
+                // newUser.fb.access_token = access_token; // we will save the token that facebook provides to the user
+                // newUser.fb.firstName  = profile.name.givenName;
+                // newUser.fb.lastName = profile.name.familyName; // look at the passport user profile to see how names are returned
+                // newUser.fb.email = profile.emails[0].value; // facebook can return multiple emails so we'll take the first
+
+                // save our user to the database
+                FbUser.createFbUser(newFbUser,function (err,fbUser) {
+                    if(err) throw err;
+                    console.log(fbUser);
+                    return done(null,newFbUser);
+                });
+            }
         });
     }
 ));
 
-router.post('/register',upload.single('profileImage'),function (req, res, next) {
-    var name = req.body.name;
-    var email = req.body.email;
-    var username = req.body.username;
-    var password = req.body.password;
-    var confirmPassword = req.body.password2;
-    if(req.file){
-        console.log('Uploading file.......');
-        var profileImage = req.file.fieldname;
+router.get('/auth/facebook', passport.authenticate('facebook', {scope: ['email']}));
 
-    }
-    else{
-        console.log('No file upload');
-        var profileImage = 'noImage.jpg';
-    }
-    console.log(name,email,username);
+router.get('/auth/facebook/callback',
+    passport.authenticate('facebook', { successRedirect: '/users/dashboard',
+        failureRedirect: '/' }));
 
-    //form validator
-    req.checkBody('name','Name field is required').notEmpty();
-    req.checkBody('email','Email field is required').notEmpty();
-    req.checkBody('email','Email is not valid').isEmail();
-    req.checkBody('username','Username is required').notEmpty();
-    req.checkBody('password','Password is required').notEmpty();
-    //req.checkBody('confirmPassword','Password is not match').equals(req.body.password);
 
-    //check error
-    var errors = req.validationErrors();
-    if(errors){
-        console.log('Error');
-        res.render('register',{errors:errors});
-    }
-    else {
-        console.log('No Error');
-        var newUser = new User({
-            name:name,
-            email:email,
-            username:username,
-            password:password,
-            profileImage:profileImage
-        });
-
-        User.createUser(newUser,function (err,user) {
-            if(err) throw err;
-            console.log(user);
-        });
-        req.flash('success_msg','You are registered and can now login ');
-        res.location('/');
-        res.redirect('/');
-    }
-
-});
-
-router.get('/logout',function (req,res) {
-    req.logOut();
-    req.flash('success_msg','You are logout');
-    res.redirect('/users/login');
-})
-
-module.exports=router;
+module.exports = router;
